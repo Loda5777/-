@@ -48,18 +48,23 @@ class DataTransformation:
     def data_preprocessing(self):
         self.data.drop(['TRUSTAPPLYID', 'TRUSTAPPLYNO', 'LABGROUPNAME', 'LABITEMID', 'PROJMANAGER', 'STRUCTTYPE', 'QTY',
                         'EXPERIMENTTASKID',
-                        'PLANEND', 'DELETEFLAG', 'CHGCOUNT', ], axis=1, inplace=True, )
+                       'PLANEND', 'DELETEFLAG', 'CHGCOUNT', ], axis=1, inplace=True, )
         self.data.rename(
-            columns={'SOURCEPROJCODE': '项目编号', 'TESTPHASENAME': '项目阶段', 'LABITEMNAME': '测试项目', 'SOURCEPROJNAME': '测试机型',
+            columns={'SOURCEPROJCODE': '项目编号', 'TESTPHASENAME': '项目阶段', 'LABITEMNAME': '测试项目', 'SOURCEPROJNAME': '机型',
                      'CORENAME': '机芯', 'PANELMODEL': '屏型号', 'POWER': '电源', 'HARDLEADER': '硬件Leader',
                      'PJMSIGNER': 'PJM会签',
-                     'QTPMAKER': 'QTP制作', 'TESTHOURS': '测试需要时间', 'PLANSTART': '计划开始时间', 'PLANENDTIME': '计划结束时间',
+                     'QTPMAKER': 'QTP制作', 'TESTHOURS': '需求测试时长', 'PLANSTART': '计划开始时间', 'PLANENDTIME': '计划结束时间',
                      'NEWTESTRESULT': '最新测试结果', 'REQUIRECOMPLETEDATE': '需求完成时间', 'DATAENTERMAN': '测试人员',
                      'TESTCHECKTOR': '审核人',
                      'ENDTIME': '实际完成时间', 'TESTRESULT': '测试结果', 'TASKREGISTERNO': '任务编号', 'BATCHNO': '批次号',
                      'UNQUALIFIEDDESC': '备注', 'TASKSTAT': '任务状态', 'LABITEMCODE': '测试编号', }, inplace=True, )
+
+        self.data.drop(['屏型号', '电源', '硬件Leader', 'PJM会签', 'QTP制作', '审核人', '任务编号', '测试结果', '需求测试时长', '需求完成时间',
+                        '实际完成时间', ], axis=1, inplace=True, )
         # TODO 列名的重新排序
-        # self.data = self.data[['']]
+        self.data = self.data[['测试项目', '测试人员', '项目编号', '项目阶段', '批次号', '机型', '机芯', '计划开始时间', '计划结束时间', '最新测试结果',
+                               '备注', '任务状态', '测试编号', ]]
+        self.data = self.data.sort_values('测试项目')
         # TODO index按项目数索引
         # self.data
 
@@ -69,10 +74,13 @@ class DataTransformation:
         for i in range(0, len(self.data)):
             to_labitemcode = self.data.loc[i, '测试编号']
             to_labitemname = self.data.loc[i, '测试项目']
-            if (to_labitemcode in self.dic) and (to_labitemname in self.dic):
+            # TODO 测试项目名的获取
+            # if (to_labitemcode in self.dic) and (to_labitemname in self.dic):
+            if to_labitemcode in self.dic:
                 self.data.loc[i, '测试项目'] = self.dic[to_labitemcode]
             else:
                 self.data.drop(labels=i, axis=0, inplace=True, )
+        self.data.drop('测试编号', axis=1, inplace=True,)
 
     # 将处理的数据写入新表中
     def excel_output(self):
@@ -80,14 +88,24 @@ class DataTransformation:
         time_str = str(datetime.date.today())
         suffix = ".xlsx"
         string = address_str + time_str + suffix
-        print(string)
-        self.data.to_excel(string, sheet_name='1', index=False, )
+        print('已生成', string)
+        self.data.to_excel(string, sheet_name=time_str, index=False, )
+
+    def excel_output_for_powerbi(self):
+        address_str = r"D:\data_for_PowerBi\\"
+        new_str = "今日测试数据"
+        suffix = ".xlsx"
+        string = address_str + new_str + suffix
+        print('已生成', string)
+        self.data.to_excel(string, sheet_name=new_str, index=False, )
 
 
 if __name__ == '__main__':
-    df = DataTransformation(path=r'D:\oracle_csv\2021-04-20.xlsx', )
+    df = DataTransformation(path=r'D:\oracle_csv\2021-04-25.xlsx', )
+    # df.index_ori_loc(91)
     df.my_mapping()
-    # df.print_map()
+    # df.index_loc(20)
     df.data_preprocessing()
     df.classification()
     df.excel_output()
+    df.excel_output_for_powerbi()
